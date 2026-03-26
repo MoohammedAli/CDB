@@ -25,7 +25,12 @@ typedef struct {
 } Table;
 
 typedef enum {META_COMMAND_SUCCESS, META_COMMAND_UNRECOGNIZED_COMMAND} MetaCommandResult;
-typedef enum {PREPARE_SUCCESS, PREPARE_UNRECOGNIZED_STATEMENT, PREPARE_SYNTAX_ERROR, PREPARE_STRING_TOO_LONG} PrepareResult;
+typedef enum {PREPARE_SUCCESS, 
+              PREPARE_NEGATIVE_ID,
+              PREPARE_UNRECOGNIZED_STATEMENT, 
+              PREPARE_SYNTAX_ERROR, 
+              PREPARE_STRING_TOO_LONG
+             } PrepareResult;
 typedef enum {STATEMENT_INSERT, STATEMENT_SELECT} StatementType;
 typedef enum {EXECUTE_SUCCESS, EXECUTE_TABLE_FULL} ExecuteResult;
 typedef struct {
@@ -173,7 +178,10 @@ MetaCommandResult do_meta_command (InputBuffer* input_buffer, Table* table) {
 }
 
 PrepareResult prepare_statement (InputBuffer* input_buffer, Statement* statement) {
-    if (strncmp(input_buffer->buffer, "insert", 6) == 0) return prepare_insert(input_buffer, statement);
+    if (strncmp(input_buffer->buffer, "insert", 6) == 0) {return prepare_insert(input_buffer, statement);}
+    if (strcmp(input_buffer->buffer, "select") == 0) {
+        statement->type = STATEMENT_SELECT;
+    }
 }
 
 ExecuteResult execute_statement (Statement* statement, Table* table) {
@@ -205,8 +213,8 @@ int main (int argc, char* argv[]) {
         switch (prepare_statement(input_buffer, &statement)) {
             case (PREPARE_SUCCESS):
                 break;
-            case (PREPARE_SYNTAX_ERROR):
-                printf("Syntax error. could not parse statement \n");
+            case (PREPARE_STRING_TOO_LONG):
+                printf("String is too long. \n");
                 continue;
             case (PREPARE_UNRECOGNIZED_STATEMENT):
                 printf("Unrecognized keyword at the start of '%s' \n", input_buffer->buffer);
