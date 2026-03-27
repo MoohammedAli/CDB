@@ -8,6 +8,12 @@
 #define TABLE_MAX_PAGE 100
 
 typedef struct {
+    int file_descriptor;
+    uint32_t file_length;
+    void* pages[TABLE_MAX_PAGE];
+} Pager;
+
+typedef struct {
     uint32_t id;
     char username[COLUMN_USERNAME_SIZE + 1];
     char email[COLUMN_EMAIL_SIZE + 1];
@@ -21,7 +27,7 @@ typedef struct {
 
 typedef struct {
     uint32_t num_rows;
-    void* pages[TABLE_MAX_PAGE];
+    Pager* pager;
 } Table;
 
 typedef enum {META_COMMAND_SUCCESS, META_COMMAND_UNRECOGNIZED_COMMAND} MetaCommandResult;
@@ -55,13 +61,14 @@ void print_row (ROW* row) {
     printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 }
 
-Table* new_table () {
-    Table* newTable = (Table*)malloc(sizeof(Table));
-    newTable->num_rows = 0;
-    for (uint32_t row = 0; row < TABLE_MAX_PAGE; row++) {
-        newTable->pages[row] = NULL;
-    }
-    return newTable;
+Table* db_open (const char* filename) {
+    Pager* pager = pager_open(filename);
+    uint32_t num_rows = pager->file_length / ROW_SIZE;
+
+    Table* table = malloc(sizeof(Table));
+    table->pager = pager;
+    table->num_rows = num_rows;
+    return table;
 }
 
 void free_table (Table* table) {
