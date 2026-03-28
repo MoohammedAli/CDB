@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
 #define COLUMN_USERNAME_SIZE 128
 #define COLUMN_EMAIL_SIZE 255
@@ -59,6 +62,28 @@ const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGE;
 
 void print_row (ROW* row) {
     printf("(%d, %s, %s)\n", row->id, row->username, row->email);
+}
+
+Pager* pager_open (const char* filename) {
+    int fd = open(filename, 
+                  O_RDWR |
+                     O_CREAT,
+                  S_IWUSR |
+                     S_IRUSR);
+
+    if (fd == -1) {
+        printf("Unable to open file.");
+        exit(EXIT_FAILURE);
+    }
+
+    off_t file_length = lseek(fd, 0, SEEK_END);
+    Pager* pager = malloc(sizeof(Pager));
+    pager->file_descriptor = fd;
+    pager->file_length = file_length;
+    for (uint32_t i=0; i<TABLE_MAX_PAGE; i++) {
+        pager->pages[i] = NULL;
+    }
+    return pager;
 }
 
 Table* db_open (const char* filename) {
