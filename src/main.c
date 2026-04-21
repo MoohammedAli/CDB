@@ -33,6 +33,12 @@ typedef struct {
     Pager* pager;
 } Table;
 
+typedef struct {
+    Table* table;
+    uint32_t row_num;
+    bool end_of_table;  // indicates the position one past the last element.
+} Cursor;
+
 typedef enum {META_COMMAND_SUCCESS, META_COMMAND_UNRECOGNIZED_COMMAND} MetaCommandResult;
 typedef enum {PREPARE_SUCCESS, 
               PREPARE_NEGATIVE_ID,
@@ -65,7 +71,7 @@ void print_row (ROW* row) {
 }
 
 void* get_page (Pager* pager, uint32_t page_num) {
-    if (page_num > TABLE_MAX_PAGE) {
+    if (page_num >= TABLE_MAX_PAGE) {
         printf("Tried to fetch page number out of bound. %d > %d\n", page_num, TABLE_MAX_PAGE);
         exit(EXIT_FAILURE);
     }
@@ -193,7 +199,7 @@ void free_table (Table* table) {
 
 void serialize_row (ROW* source, void* destination) {
     memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
-    memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_OFFSET);
+    memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_SIZE);
     memcpy(destination + EMAIL_OFFSET, &(source->email), EMAIL_SIZE);
 }
 
@@ -298,6 +304,7 @@ PrepareResult prepare_statement (InputBuffer* input_buffer, Statement* statement
     if (strcmp(input_buffer->buffer, "select") == 0) {
         statement->type = STATEMENT_SELECT;
     }
+    return PREPARE_UNRECOGNIZED_STATEMENT;
 }
 
 ExecuteResult execute_statement (Statement* statement, Table* table) {
@@ -310,7 +317,12 @@ ExecuteResult execute_statement (Statement* statement, Table* table) {
 }
 
 int main (int argc, char* argv[]) {
-    Table* table = new_table(); 
+    if (argc < 2) {
+        printf("Must supply a database filename\n");
+        exit(EXIT_FAILURE);
+    }
+    char* filename = argv[1];
+    Table* table = db_open(filename);
     InputBuffer* input_buffer = new_input_buffer();
     while (1) {
         printPrompt();
