@@ -30,13 +30,14 @@ extern const uint32_t ROW_SIZE;
 extern const uint32_t ROWS_PER_PAGE;
 extern const uint32_t TABLE_MAX_ROWS;
 
-Table*  db_open(const char* filename);
-void    db_close(Table* table);
-void*   row_slot(Table* table, uint32_t row_num);
-void    serialize_row(ROW* source, void* destination);
-void    deserialize_row(void* source, ROW* destination);
+Table* db_open(const char* filename);
+void db_close(Table* table);
+void* cursor_value(Cursor* cursor);
+void cursor_advance(Cursor* cursor);
+void serialize_row(ROW* source, void* destination);
+void deserialize_row(void* source, ROW* destination);
 Cursor* table_start(Table* table);
 Cursor* table_end(Table* table);
-void    print_row(ROW* row);
+void print_row(ROW* row);
 
 #endif
